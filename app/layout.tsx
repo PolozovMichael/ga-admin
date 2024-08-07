@@ -27,41 +27,37 @@ export default async function RootLayout({
 
   return (
     <>
-      {session ? (
-        <html lang="en">
-          <body
-            className={`${inter.className} flex gap-5 shadow-lg p-3 h-screen bg-black overflow-hidden`}
+      <html lang="en">
+        <body
+          className={`${inter.className} flex gap-5 shadow-lg p-3 h-screen bg-black overflow-hidden`}
+        >
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
           >
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="dark"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <Sidebar />
-              <div className="w-full justify-between flex flex-col z-50">
-                <div className="w-full flex justify-between mb-5">
-                  <Navbar />
-                  <div className="flex w-[500px] max-w-sm items-center space-x-2">
-                    <Input
-                      className="rounded-[12px]"
-                      type="text"
-                      placeholder="Type something to search..."
-                    />
-                    <Button className="rounded-[12px]" type="submit">
-                      Search
-                    </Button>
-                  </div>
+            <Sidebar />
+            <div className="w-full justify-between flex flex-col z-50">
+              <div className="w-full flex justify-between mb-5">
+                <Navbar />
+                <div className="flex w-[500px] max-w-sm items-center space-x-2">
+                  <Input
+                    className="rounded-[12px]"
+                    type="text"
+                    placeholder="Type something to search..."
+                  />
+                  <Button className="rounded-[12px]" type="submit">
+                    Search
+                  </Button>
                 </div>
-                {children}
               </div>
-              <Toaster />
-            </ThemeProvider>
-          </body>
-        </html>
-      ) : (
-        <>Unauthorized</>
-      )}
+              {children}
+            </div>
+            <Toaster />
+          </ThemeProvider>
+        </body>
+      </html>
     </>
   )
 }
