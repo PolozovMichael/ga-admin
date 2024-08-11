@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { MenubarSeparator } from './ui/menubar'
 import { Separator } from '@/components/ui/separator'
@@ -13,8 +15,39 @@ import {
   ShieldQuestion,
   User,
 } from 'lucide-react'
+import { useRouter } from 'next/router'
+import { usePathname } from 'next/navigation'
+
+const sidebarItems: SidebarItem[] = [
+  { href: '/', icon: <LayoutDashboard width={16} />, label: 'Home' },
+  { href: '/orders', icon: <Boxes width={16} />, label: 'Orders' },
+  {
+    href: '/customers',
+    icon: <PersonStanding width={16} />,
+    label: 'Customers',
+  },
+  { href: '/products', icon: <BoxIcon width={16} />, label: 'Products' },
+  { href: '/settings', icon: <Settings width={16} />, label: 'Settings' },
+  {
+    href: '/user-management',
+    icon: <User width={16} />,
+    label: 'User management',
+  },
+  {
+    href: '/special-offers-settings',
+    icon: <Gift width={16} />,
+    label: 'Special offers settings',
+  },
+  {
+    href: '/faq-settings',
+    icon: <ShieldQuestion width={16} />,
+    label: 'FAQ settings',
+  },
+]
 
 export default function Sidebar() {
+  const pathname = usePathname()
+
   return (
     <div className="w-[350px] gap-2 h-full flex flex-col border p-3 rounded-[15px]">
       <div className="w-full flex justify-between items-center">
@@ -26,54 +59,18 @@ export default function Sidebar() {
       </div>
       <MenubarSeparator />
       <div className="w-full gap-1 flex flex-col">
-        <div className="bg-card p-3 rounded-[10px] w-full flex items-center gap-1">
-          <LayoutDashboard width={16} />
-          <Link className="" href="/">
-            Home
+        {sidebarItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`w-full p-3 rounded-[10px] flex items-center gap-1 ${
+              pathname === item.href ? 'bg-secondary' : ''
+            }`}
+          >
+            {item.icon}
+            <span>{item.label}</span>
           </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <Boxes width={16} />
-          <Link className="" href="/orders">
-            Orders
-          </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <PersonStanding width={16} />
-          <Link className="" href="/customers">
-            Customers
-          </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <BoxIcon width={16} />
-          <Link className="" href="/products">
-            Products
-          </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <Settings width={16} />
-          <Link className="" href="/settings">
-            Settings
-          </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <User width={16} />
-          <Link className="" href="/user-management">
-            User management
-          </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <Gift width={16} />
-          <Link className="" href="/special-offers-settings">
-            Special offers settings
-          </Link>
-        </div>
-        <div className="w-full p-3 rounded-[10px] flex items-center gap-1">
-          <ShieldQuestion width={16} />
-          <Link className="" href="/faq-settings">
-            FAQ settings
-          </Link>
-        </div>
+        ))}
       </div>
       <MenubarSeparator />
       <div className="w-full">

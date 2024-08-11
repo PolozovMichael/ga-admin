@@ -1,7 +1,10 @@
+import LoginForm from '@/components/LoginForm'
 import React from 'react'
 
 export default function page() {
   return (
-    <div>page</div>
+    <section className="w-full h-screen flex justify-center items-center">
+      <LoginForm />
+    </section>
   )
 }

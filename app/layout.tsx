@@ -1,14 +1,11 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
-import { Toaster } from '@/components/ui/toaster'
-import './globals.css'
+import { Toaster } from '@/components/ui/sonner'
 import Sidebar from '@/components/Sidebar'
-import Navbar from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getServerSession } from 'next-auth'
-import { options } from './api/auth/[...nextauth]/options'
+import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,10 +18,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const session = await getServerSession(options)
-
-  console.log(session?.user)
-
   return (
     <>
       <html lang="en">
@@ -40,7 +33,6 @@ export default async function RootLayout({
             <Sidebar />
             <div className="w-full justify-between flex flex-col z-50">
               <div className="w-full flex justify-between mb-5">
-                <Navbar />
                 <div className="flex w-[500px] max-w-sm items-center space-x-2">
                   <Input
                     className="rounded-[12px]"

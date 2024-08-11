@@ -2,11 +2,12 @@
 
 import { Charts } from '@/components/Charts'
 import { DataTable } from '@/components/Table'
-
 import { Form } from '@/components/Form'
 import React from 'react'
+import useAuth from '@/hooks/useAuth'
 
-export default async function page() {
+export default function Home() {
+  useAuth()
   return (
     <div className="mx-auto w-full gap-5 flex flex-col overflow-y-scroll">
       <div className="w-full flex gap-3">
