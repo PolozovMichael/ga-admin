@@ -15,6 +15,8 @@ import {
 } from '@tanstack/react-table'
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react'
 
+import { ScrollArea } from '@/components/ui/scroll-area'
+
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -22,7 +24,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -35,47 +36,91 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog'
+import EditCategoryForm from './EditCategoryForm'
+import { useState } from 'react'
+import SubcategoriesList from './SubcategoriesList'
 
-export type User = {
-  id: string
-  phone: string
-  name: string
+export type Category = {
+  Id: string
+  CityId: string
+  City: {
+    Id: string
+    Name: string
+    DeliveryDurationDays: number
+  }
+  Address: string
 }
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<Category>[] = [
   {
-    accessorKey: 'id',
+    accessorKey: 'Id',
     header: 'ID',
-    cell: ({ row }) => <div className="capitalize">{row.getValue('id')}</div>,
+    cell: ({ row }) => <div className="capitalize">{row.getValue('Id')}</div>,
   },
   {
-    accessorKey: 'phone',
-    header: 'Phone',
+    accessorKey: 'CityId',
+    header: 'City ID',
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue('phone')}</div>
+      <div className="capitalize">{row.getValue('CityId')}</div>
     ),
   },
   {
-    accessorKey: 'name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
+    accessorKey: 'City',
+    header: 'City ID',
+    cell: ({ row }) => {
+      const data = row.getValue('City') as {
+        Id: string
+        Name: string
+        DeliveryDurationDays: number
+      }
+      return <div className="capitalize">{data.Id}</div>
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue('name')}</div>,
+  },
+  {
+    accessorKey: 'City',
+    header: 'City Name',
+    cell: ({ row }) => {
+      const data = row.getValue('City') as {
+        Id: string
+        Name: string
+        DeliveryDurationDays: number
+      }
+      return <div className="capitalize">{data.Name}</div>
+    },
+  },
+  {
+    accessorKey: 'City',
+    header: 'Delivery duration',
+    cell: ({ row }) => {
+      const data = row.getValue('City') as {
+        Id: string
+        Name: string
+        DeliveryDurationDays: number
+      }
+      return <div className="capitalize">{data.DeliveryDurationDays}</div>
+    },
+  },
+  {
+    accessorKey: 'Address',
+    header: 'Address',
+    cell: ({ row }) => {
+      return <div className="capitalize">{row.getValue('Address')}</div>
+    },
   },
   {
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
-      const payment = row.original
-
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -87,9 +132,9 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuContent className="rounded-[12px]" align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
+              onClick={() => navigator.clipboard.writeText(row.getValue('Id'))}
             >
-              Copy User ID
+              Copy service ID
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -98,7 +143,7 @@ export const columns: ColumnDef<User>[] = [
   },
 ]
 
-export function DataTable() {
+export function ServicesTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -112,16 +157,19 @@ export function DataTable() {
   async function getData() {
     try {
       setIsLoading(true)
-      const res = await fetch('http://ga-api.13lab.tech/api/v1/admin/users', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access-token')}`,
+      const res = await fetch(
+        'http://ga-api.13lab.tech/api/v1/service-address',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('access-token')}`,
+          },
         },
-      })
+      )
       if (res.ok) {
         toast.success('Data fetched successfully')
-        const users = await res.json()
-        setFetchedData(users.payload)
+        const categories = await res.json()
+        setFetchedData(categories.payload)
       }
     } catch (error) {
       console.log(error)
@@ -159,14 +207,6 @@ export function DataTable() {
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter names..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm rounded-[12px]"
-        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto rounded-[12px]">

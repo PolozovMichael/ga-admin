@@ -15,6 +15,8 @@ import {
 } from '@tanstack/react-table'
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react'
 
+import { ScrollArea } from '@/components/ui/scroll-area'
+
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -22,7 +24,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -35,40 +36,144 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog'
+import EditCategoryForm from './EditCategoryForm'
+import { useState } from 'react'
+import SubcategoriesList from './SubcategoriesList'
 
-export type User = {
+export type Category = {
   id: string
-  phone: string
   name: string
+  subcategories: { id: string; name: string }[]
 }
 
-export const columns: ColumnDef<User>[] = [
+export function DeleteCategoryBtn({ id }: { id: string }) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function deleteCategory() {
+    try {
+      setIsLoading(true)
+      const res = await fetch(
+        `http://ga-api.13lab.tech/api/v1/admin/categories/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('access-token')}`,
+          },
+        },
+      )
+      if (res.ok) {
+        toast.success('Category deleted successfully')
+      }
+    } catch (error) {
+      console.log(error)
+      toast.error('Failed to delete category')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      onClick={deleteCategory}
+      className="rounded-[12px] bg-white text-black hover:text-white"
+      variant="outline"
+    >
+      {isLoading ? 'Deleting...' : 'Delete FAQ'}
+    </Button>
+  )
+}
+
+export const columns: ColumnDef<Category>[] = [
   {
     accessorKey: 'id',
     header: 'ID',
     cell: ({ row }) => <div className="capitalize">{row.getValue('id')}</div>,
   },
   {
-    accessorKey: 'phone',
-    header: 'Phone',
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue('phone')}</div>
-    ),
+    accessorKey: 'name',
+    header: 'Category name',
+    cell: ({ row }) => <div className="capitalize">{row.getValue('name')}</div>,
   },
   {
-    accessorKey: 'name',
-    header: ({ column }) => {
+    accessorKey: 'subcategories',
+    header: 'Subcategory name',
+    cell: ({ row }) => {
+      return <SubcategoriesList id={row.getValue('id')} />
+    },
+  },
+  {
+    id: 'Edit',
+    enableHiding: false,
+    cell: ({ row }) => {
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[15px] bg-secondary">
+              Edit Category
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            aria-describedby="dialog-description"
+            className="sm:max-w-[325px]"
+          >
+            <DialogHeader>
+              <DialogTitle>Edit category</DialogTitle>
+            </DialogHeader>
+            <EditCategoryForm
+              id={row.getValue('id')}
+              name={row.getValue('name')}
+            />
+          </DialogContent>
+        </Dialog>
       )
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue('name')}</div>,
+  },
+  {
+    id: 'Delete',
+    enableHiding: false,
+    cell: ({ row }) => {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[15px] bg-secondary">
+              Delete FAQ
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                Are you sure you want to delete this FAQ?
+              </DialogTitle>
+              <DialogDescription>
+                This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  className="rounded-[12px]"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
+              <DeleteCategoryBtn id={row.getValue('id')} />
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
   {
     id: 'actions',
@@ -89,7 +194,7 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(payment.id)}
             >
-              Copy User ID
+              Copy category ID
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -98,7 +203,7 @@ export const columns: ColumnDef<User>[] = [
   },
 ]
 
-export function DataTable() {
+export function CategoriesTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -112,7 +217,7 @@ export function DataTable() {
   async function getData() {
     try {
       setIsLoading(true)
-      const res = await fetch('http://ga-api.13lab.tech/api/v1/admin/users', {
+      const res = await fetch('http://ga-api.13lab.tech/api/v1/categories', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('access-token')}`,
@@ -120,8 +225,8 @@ export function DataTable() {
       })
       if (res.ok) {
         toast.success('Data fetched successfully')
-        const users = await res.json()
-        setFetchedData(users.payload)
+        const categories = await res.json()
+        setFetchedData(categories.payload)
       }
     } catch (error) {
       console.log(error)
@@ -160,7 +265,7 @@ export function DataTable() {
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter names..."
+          placeholder="Filter categories..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('name')?.setFilterValue(event.target.value)

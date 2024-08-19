@@ -1,5 +1,5 @@
 type SidebarItem = {
   href: string
-  icon: React.ReactElement
+  icon?: React.ReactElement
   label: string
 }

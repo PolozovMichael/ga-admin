@@ -1,6 +1,18 @@
 'use client'
 
 import * as React from 'react'
+
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -20,12 +32,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+
 import {
   Table,
   TableBody,
@@ -35,93 +44,38 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import { revalidatePath } from 'next/cache'
+import ChangeFAQForm from './changeFAQForm'
+import { Input } from './ui/input'
+import { useState } from 'react'
 
-export type User = {
-  id: string
-  phone: string
-  name: string
+export type Question = {
+  Id: string
+  Content: string
+  Name: string
+  ParentId?: null
+  ProfileSections?: null
 }
 
-export const columns: ColumnDef<User>[] = [
-  {
-    accessorKey: 'id',
-    header: 'ID',
-    cell: ({ row }) => <div className="capitalize">{row.getValue('id')}</div>,
-  },
-  {
-    accessorKey: 'phone',
-    header: 'Phone',
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue('phone')}</div>
-    ),
-  },
-  {
-    accessorKey: 'name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => <div className="lowercase">{row.getValue('name')}</div>,
-  },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => {
-      const payment = row.original
+let data: Question[] = []
 
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="rounded-[12px]" align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Copy User ID
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
+export function DeleteFAQBtn({ id }: { id: string }) {
+  const [isLoading, setIsLoading] = useState(false)
 
-export function DataTable() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  )
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [fetchedData, setFetchedData] = React.useState([])
-
-  async function getData() {
+  async function deleteFAQ() {
     try {
       setIsLoading(true)
-      const res = await fetch('http://ga-api.13lab.tech/api/v1/admin/users', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access-token')}`,
+      const res = await fetch(
+        `http://ga-api.13lab.tech/api/v1/admin/profile-sections/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('access-token')}`,
+          },
         },
-      })
+      )
       if (res.ok) {
-        toast.success('Data fetched successfully')
-        const users = await res.json()
-        setFetchedData(users.payload)
+        toast.success('FAQ deleted successfully')
       }
     } catch (error) {
       console.log(error)
@@ -130,12 +84,144 @@ export function DataTable() {
     }
   }
 
+  return (
+    <Button
+      onClick={deleteFAQ}
+      className="rounded-[12px] bg-white text-black hover:text-white"
+      variant="outline"
+    >
+      {isLoading ? 'Deleting...' : 'Delete FAQ'}
+    </Button>
+  )
+}
+
+export const columns: ColumnDef<Question>[] = [
+  {
+    accessorKey: 'Id',
+    header: 'Question ID',
+    cell: ({ row }) => <div className="capitalize">{row.getValue('Id')}</div>,
+    enableSorting: true,
+    enableHiding: false,
+  },
+  {
+    accessorKey: 'Name',
+    header: 'Question name',
+    cell: ({ row }) => <div className="capitalize">{row.getValue('Name')}</div>,
+  },
+  {
+    accessorKey: 'Content',
+    header: 'Question answer',
+    cell: ({ row }) => (
+      <div className="capitalize">
+        {row.getValue('Content') || '-- No data --'}
+      </div>
+    ),
+  },
+  {
+    id: 'Edit',
+    enableHiding: false,
+    cell: ({ row }) => {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[15px] bg-secondary">
+              Edit FAQ
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            aria-describedby="dialog-description"
+            className="sm:max-w-[325px]"
+          >
+            <DialogHeader>
+              <DialogTitle>Edit FAQ</DialogTitle>
+            </DialogHeader>
+            <ChangeFAQForm
+              id={row.getValue('Id')}
+              name={row.getValue('Name')}
+              content={row.getValue('Content')}
+            />
+          </DialogContent>
+        </Dialog>
+      )
+    },
+  },
+  {
+    id: 'Delete',
+    enableHiding: false,
+    cell: ({ row }) => {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[15px] bg-secondary">
+              Delete FAQ
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                Are you sure you want to delete this FAQ?
+              </DialogTitle>
+              <DialogDescription>
+                This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  className="rounded-[12px]"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
+              <DeleteFAQBtn id={row.getValue('Id')} />
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )
+    },
+  },
+]
+
+export function DataTableFAQs() {
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  )
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
+  const [faqData, setFaqData] = React.useState([])
+  const [isLoading, setIsLoading] = React.useState(false)
+
   React.useEffect(() => {
-    getData()
+    async function fetchFAQ() {
+      try {
+        setIsLoading(true)
+        const response = await fetch(
+          'http://ga-api.13lab.tech/api/v1/profile-sections',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('access-token')}`,
+            },
+          },
+        )
+        const resData = await response.json()
+        setFaqData(resData.payload)
+        revalidatePath('/faq-settings')
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchFAQ()
   }, [])
 
-  console.log(fetchedData)
-  const data = fetchedData
+  data = faqData
 
   const table = useReactTable({
     data,
@@ -160,12 +246,12 @@ export function DataTable() {
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter names..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+          placeholder="Filter questions..."
+          value={(table.getColumn('Name')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
+            table.getColumn('Name')?.setFilterValue(event.target.value)
           }
-          className="max-w-sm rounded-[12px]"
+          className="max-w-md rounded-[12px]"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -181,7 +267,7 @@ export function DataTable() {
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
-                    className="capitalize"
+                    className="capitalize rounded-[15px]"
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) =>
                       column.toggleVisibility(!!value)
@@ -197,7 +283,7 @@ export function DataTable() {
       <div className="rounded-[12px] border">
         <Table className="bg-card rounded-[12px]">
           <TableHeader className="rounded-[12px]">
-            {table.getHeaderGroups().map((headerGroup) => (
+            {table?.getHeaderGroups().map((headerGroup) => (
               <TableRow className="rounded-[12px]" key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
@@ -215,12 +301,9 @@ export function DataTable() {
             ))}
           </TableHeader>
           <TableBody className="rounded-[12px]">
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
+            {table?.getRowModel().rows?.length ? (
+              table?.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -237,7 +320,7 @@ export function DataTable() {
                   colSpan={columns.length}
                   className="h-24 text-center rounded-[12px]"
                 >
-                  No results.
+                  {isLoading ? 'Loading...' : 'No data found'}
                 </TableCell>
               </TableRow>
             )}

@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { z } from 'zod'
+import { date, z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -60,24 +60,13 @@ export default function LoginForm() {
     },
   })
 
-  async function onPhoneSubmit(values: z.infer<typeof formPhoneSchema>) {
-    try {
-      setIsSubmittingPhoneForm(true)
-      console.log(values.phoneNumber)
-      setPhoneNumber(values.phoneNumber)
-      const res = await fetch('http://ga-api.13lab.tech/api/v1/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone: phoneNumber }),
-      })
-      if (res.ok) toast.success('OTP sent successfully.')
-    } catch (error) {
-      console.log(error)
-      toast.error('An error occurred while processing the request.')
-    } finally {
-      setIsSubmittingPhoneForm(false)
+  function onPhoneSubmit(values: z.infer<typeof formPhoneSchema>) {
+    console.log(values.phoneNumber)
+    setPhoneNumber(values.phoneNumber)
+    if (phoneNumber === '+71234567890') {
+      toast.success('Phone number is correct!')
+    } else {
+      toast.error('Phone number is incorrect!')
     }
   }
 
@@ -98,9 +87,17 @@ export default function LoginForm() {
       )
       console.log(res)
       if (res.ok) {
-        toast.success('OTP verified successfully.')
         localStorage.setItem('authenticated', 'true')
+        localStorage.setItem('phone', phoneNumber)
+        localStorage.setItem('otp', OTP)
+        localStorage.setItem(
+          'access-token',
+          await res.json().then((data) => data.payload.access_token),
+        )
+        toast.success('OTP is correct!')
         router.push('/')
+      } else {
+        toast.error('OTP is incorrect!')
       }
     } catch (error) {
       console.log(error)

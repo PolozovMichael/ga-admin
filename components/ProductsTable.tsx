@@ -36,39 +36,75 @@ import {
 } from '@/components/ui/table'
 import { toast } from 'sonner'
 
-export type User = {
+export type Product = {
   id: string
-  phone: string
   name: string
+  description: string
+  price: number
+  sub_category_id: string
+  sub_category: { name: string }
+  brand_id: string
+  brand: { name: string }
 }
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: 'id',
-    header: 'ID',
+    header: 'Product ID',
     cell: ({ row }) => <div className="capitalize">{row.getValue('id')}</div>,
   },
   {
-    accessorKey: 'phone',
-    header: 'Phone',
+    accessorKey: 'name',
+    header: 'Product name',
+    cell: ({ row }) => <div className="capitalize">{row.getValue('name')}</div>,
+  },
+  {
+    accessorKey: 'description',
+    header: 'Description',
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue('phone')}</div>
+      <div className="capitalize">{row.getValue('description')}</div>
     ),
   },
   {
-    accessorKey: 'name',
-    header: ({ column }) => {
+    accessorKey: 'price',
+    header: 'Price',
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue('price')}</div>
+    ),
+  },
+  {
+    accessorKey: 'sub_category_id',
+    header: 'Subcategory ID',
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue('sub_category_id')}</div>
+    ),
+  },
+  {
+    accessorKey: 'sub_category',
+    header: 'Subcategory name',
+    cell: ({ row }) => {
+      const subCategory = row.getValue('sub_category') as { name: string }
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="capitalize">
+          {subCategory ? subCategory.name : 'N/A'}
+        </div>
       )
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue('name')}</div>,
+  },
+  {
+    accessorKey: 'brand_id',
+    header: 'Brand ID',
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue('brand_id')}</div>
+    ),
+  },
+  {
+    accessorKey: 'brand',
+    header: 'Brand name',
+    cell: ({ row }) => {
+      const brand = row.getValue('brand') as { name: string }
+      return <div className="capitalize">{brand ? brand.name : 'N/A'}</div>
+    },
   },
   {
     id: 'actions',
@@ -89,7 +125,7 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(payment.id)}
             >
-              Copy User ID
+              Copy Product ID
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -98,7 +134,7 @@ export const columns: ColumnDef<User>[] = [
   },
 ]
 
-export function DataTable() {
+export function ProductsTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -112,19 +148,22 @@ export function DataTable() {
   async function getData() {
     try {
       setIsLoading(true)
-      const res = await fetch('http://ga-api.13lab.tech/api/v1/admin/users', {
+      const res = await fetch('http://ga-api.13lab.tech/api/v1/products', {
         method: 'GET',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access-token')}`,
         },
       })
       if (res.ok) {
+        const data = await res.json()
+        setFetchedData(data.payload)
+        console.log(data)
         toast.success('Data fetched successfully')
-        const users = await res.json()
-        setFetchedData(users.payload)
       }
     } catch (error) {
       console.log(error)
+      toast.error('Failed to fetch data')
     } finally {
       setIsLoading(false)
     }
@@ -158,7 +197,7 @@ export function DataTable() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex gap-2 items-center py-4">
         <Input
           placeholder="Filter names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
@@ -237,7 +276,7 @@ export function DataTable() {
                   colSpan={columns.length}
                   className="h-24 text-center rounded-[12px]"
                 >
-                  No results.
+                  {isLoading ? 'Loading...' : 'No data found'}
                 </TableCell>
               </TableRow>
             )}

@@ -13,7 +13,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react'
+import {
+  ArrowUpDown,
+  ChevronDown,
+  EditIcon,
+  MoreHorizontal,
+  Plus,
+  X,
+} from 'lucide-react'
+
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +31,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -35,47 +43,109 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog'
+import EditCategoryForm from './EditCategoryForm'
+import { useState } from 'react'
+import SubcategoriesList from './SubcategoriesList'
+import CreateServiceForm from './CreateServiceForm'
+import ChangeServiceNameForm from './ChangeServiceNameForm'
+import DeleteServiceBtn from './DeleteServiceBtn'
 
-export type User = {
+export type Category = {
   id: string
-  phone: string
   name: string
 }
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<Category>[] = [
   {
     accessorKey: 'id',
     header: 'ID',
     cell: ({ row }) => <div className="capitalize">{row.getValue('id')}</div>,
   },
   {
-    accessorKey: 'phone',
-    header: 'Phone',
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue('phone')}</div>
-    ),
+    accessorKey: 'name',
+    header: 'Service name',
+    cell: ({ row }) => <div className="capitalize">{row.getValue('name')}</div>,
   },
   {
-    accessorKey: 'name',
-    header: ({ column }) => {
+    id: 'create',
+    enableHiding: false,
+    cell: ({ row }) => {
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[12px]">
+              <Plus className="cursor-pointer" height={15} width={15} />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create a new service.</DialogTitle>
+            </DialogHeader>
+            <CreateServiceForm />
+          </DialogContent>
+        </Dialog>
       )
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue('name')}</div>,
+  },
+  {
+    id: 'update',
+    enableHiding: false,
+    cell: ({ row }) => {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[12px]">
+              <EditIcon className="cursor-pointer" height={15} width={15} />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Update the service.</DialogTitle>
+            </DialogHeader>
+            <ChangeServiceNameForm
+              id={row.getValue('id')}
+              name={row.getValue('name')}
+            />
+          </DialogContent>
+        </Dialog>
+      )
+    },
+  },
+  {
+    id: 'delete',
+    enableHiding: false,
+    cell: ({ row }) => {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-[12px]">
+              <X className="cursor-pointer" height={15} width={15} />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete this service.</DialogTitle>
+              <DeleteServiceBtn id={row.getValue('id')} />
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+      )
+    },
   },
   {
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
-      const payment = row.original
-
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -87,9 +157,9 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuContent className="rounded-[12px]" align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
+              onClick={() => navigator.clipboard.writeText(row.getValue('Id'))}
             >
-              Copy User ID
+              Copy service ID
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -98,7 +168,7 @@ export const columns: ColumnDef<User>[] = [
   },
 ]
 
-export function DataTable() {
+export function ListOfServicesTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -112,7 +182,7 @@ export function DataTable() {
   async function getData() {
     try {
       setIsLoading(true)
-      const res = await fetch('http://ga-api.13lab.tech/api/v1/admin/users', {
+      const res = await fetch('http://ga-api.13lab.tech/api/v1/services', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('access-token')}`,
@@ -120,8 +190,8 @@ export function DataTable() {
       })
       if (res.ok) {
         toast.success('Data fetched successfully')
-        const users = await res.json()
-        setFetchedData(users.payload)
+        const categories = await res.json()
+        setFetchedData(categories.payload)
       }
     } catch (error) {
       console.log(error)
@@ -159,14 +229,6 @@ export function DataTable() {
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter names..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm rounded-[12px]"
-        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto rounded-[12px]">
