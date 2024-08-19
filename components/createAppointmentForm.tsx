@@ -45,7 +45,7 @@ export default function CreateAppointmentForm() {
         method: 'POST',
         body: JSON.stringify({
           staff_id: 1,
-          start_time: Date.now().toString(),
+          start_time: new Date().toISOString(),
           service_item_id: 2,
           comments: values.comments,
           full_name: values.full_name,
