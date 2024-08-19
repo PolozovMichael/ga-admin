@@ -79,8 +79,11 @@ export default function SubcategoriesList({ id }: { id: string }) {
         ) : (
           <ScrollArea className="h-fit flex-col gap-2 p-1 w-full">
             {fetchedData.map((subcategory) => (
-              <div className="flex items-center justify-between">
-                <h3 key={subcategory.id}>{subcategory.name}</h3>
+              <div
+                key={subcategory.id}
+                className="flex items-center justify-between"
+              >
+                <h3>{subcategory.name}</h3>
                 <div className="flex gap-1">
                   <Dialog>
                     <DialogTrigger asChild>
