@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import Sidebar from '@/components/Sidebar'
-import { AuthProvider } from '@/providers/AuthProvider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -28,12 +27,10 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <Sidebar />
-            <div className="w-full justify-between flex flex-col z-50">
-              {children}
-            </div>
-          </AuthProvider>
+          <Sidebar />
+          <div className="w-full justify-between flex flex-col z-50">
+            {children}
+          </div>
           <Toaster />
         </ThemeProvider>
       </body>
